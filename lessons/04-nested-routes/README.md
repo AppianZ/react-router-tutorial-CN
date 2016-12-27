@@ -121,6 +121,122 @@ What happens if you move the `About` route outside of `App`?
 
 Okay, now put it back.
 
+
+
+### [Next: Active Links](../05-active-links/)
+
 ---
 
-[Next: Active Links](../05-active-links/)
+# 路由嵌套
+
+这个 `App` 导航应该在每一个需要被用到的页面引入。如果没有React Router,我们需要把 `ul` 包裹进每一个组件中去,可能是 `Nav` 组件,或者是渲染一个 `Nav` 组件到每一屏中去。
+
+这个方式会随着项目的增长越来越累。React Router提供了另一种方式,用路由嵌套的方式来解决这种问题。就像[Ember](http://emberjs.com)一样(个人观点)。
+
+## 嵌套的结构和URL
+
+你是否注意到你的应用,实际上是一系列的盒子互相嵌套? 你是否注意到,你的路由也是和这些盒子视图有一样的嵌套逻辑? 
+
+比如,当你想要跳转到一个url, `/repos/123`,的时候,你的组件可能是这样构造的:
+
+```js
+<App>       {/*  /          */}
+  <Repos>   {/*  /repos     */}
+    <Repo/> {/*  /repos/123 */}
+  </Repos>
+</App>
+```
+
+然后你的页面UI可能是这样的:
+
+```
+         +-------------------------------------+
+         | Home Repos About                    | <- App
+         +------+------------------------------+
+         |      |                              |
+Repos -> | repo |  Repo 1                      |
+         |      |                              |
+         | repo |  Boxes inside boxes          |
+         |      |  inside boxes ...            | <- Repo
+         | repo |                              |
+         |      |                              |
+         | repo |                              |
+         |      |                              |
+         +------+------------------------------+
+```
+
+React Router希望能够通过这样嵌套路由的方式,让页面显示也能够自动嵌套。
+
+## 导航共享
+把我们的`About` 和 `Repos` 组件嵌套到 `App`,为了让我们能够在应用的所有页面中都共享这个导航。所以我们做了以下两步:
+
+第一步,让`App` 和 `Route` 改成可以添加子组件的形式,并把其他路由移到App的Route里面作为他的子组件。
+
+```js
+// index.js
+// ...
+render((
+  <Router history={hashHistory}>
+    <Route path="/" component={App}>
+      {/* make them children of `App` */}
+      <Route path="/repos" component={Repos}/>
+      <Route path="/about" component={About}/>
+    </Route>
+  </Router>
+), document.getElementById('app'))
+```
+
+第二步,在`App`的地方,渲染子组件。
+
+```js
+// modules/App.js
+// ...
+  render() {
+    return (
+      <div>
+        <h1>React Router Tutorial</h1>
+        <ul role="nav">
+          <li><Link to="/about">About</Link></li>
+          <li><Link to="/repos">Repos</Link></li>
+        </ul>
+
+        {/* add this */}
+        {this.props.children}
+
+      </div>
+    )
+  }
+// ...
+```
+
+好了完成,现在点击跳转链接,可以注意到`App`组件仍然被渲染成路由本身的子组件,就像`this.props.children` 一样:)
+
+React Router是想把页面渲染成像下面这样的:
+
+```js
+// at /about
+<App>
+  <About/>
+</App>
+
+// at /repos
+<App>
+  <Repos/>
+</App>
+```
+
+## 每件大事都是简单小事的集合
+干大事的最好的方式是把所有小事拼接在一起。
+
+这就是React Router所致力于的事。每个路由组件都是可以被开发成一个独立的应用。只要你喜欢,你就可以把你想要的路由组装到你的应用中来。
+
+应用包裹着应用,盒子包裹着盒子。
+
+如果你想要把 `About` 组件移除出 `App` 会怎样呢?
+
+好,我们回到正题。
+
+### [下一课: 激活的Links](../05-active-links/)
+
+
+

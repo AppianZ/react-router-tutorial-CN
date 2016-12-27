@@ -28,6 +28,35 @@ You should see a "Hello React Router" message in the browser.
 Open up `modules/App.js` and change the text to something like "Hello
 <your name>". The browser automatically reloads with your new code.
 
+
+
+### [Next: Rendering a Router](../02-rendering-a-route/)
+
+
+
 ---
 
-[Next: Rendering a Router](../02-rendering-a-route/)
+# 项目的安装说明
+首先你需要安装[Node.js](https://nodejs.org),还需要依赖包管理工具: [npm](https://www.npmjs.com/)。
+
+## 把项目教程clone到本地
+
+```
+git clone https://github.com/reactjs/react-router-tutorial
+cd react-router-tutorial
+cd lessons/01-setting-up
+npm install
+npm start
+```
+
+现在打开[http://localhost:8080](http://localhost:8080)查看。
+
+你可以在浏览器中看到"Hello React Router"。
+
+我们也可以打开本节课程的webpack.config.js和package.json,可以看到我们是如何利用指令把项目跑起来,也可以看到项目都用到了哪些依赖的包。
+
+## 修改一些代码
+
+打开`modules/App.js`,然后修改一些文本内容,比如 "Hello <你的名字>"。浏览器会自动刷新,然后显示你更新后的代码。
+
+### [下一课: 渲染一个Router](../02-rendering-a-route/)
