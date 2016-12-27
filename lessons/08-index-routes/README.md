@@ -82,6 +82,39 @@ sink in with a bit more time. Just think about a web server that looks
 for `index.html` when you're at `/`. Same idea, React Router looks for
 an index route if a route's path matches exactly.
 
+
+### [Next: Index Links](../09-index-links/)
+
 ---
 
-[Next: Index Links](../09-index-links/)
+# 默认路由
+当我们访问一个应用的`/` 路径的时候,我们会想在这个默认路径下渲染一个 `Home` 组件。所以让我们创建一个 `Home`组件,然后研究一下如何在默认路径 `/` 下渲染出来。
+
+```js
+// modules/Home.js
+import React from 'react'
+
+export default React.createClass({
+  render() {
+    return <div>Home</div>
+  }
+})
+```
+
+我们需要一个参数来确认,我们的`App`中是否有子组件可渲染,如果没有则渲染 `Home`:
+
+```js
+// modules/App.js
+import Home from './Home'
+
+// ...
+<div>
+  {/* ... */}
+  {this.props.children || <Home/>}
+</div>
+//...
+```
+
+这将能够很好的工作
+
+
