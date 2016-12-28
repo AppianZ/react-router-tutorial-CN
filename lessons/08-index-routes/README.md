@@ -115,6 +115,48 @@ import Home from './Home'
 //...
 ```
 
-这将能够很好的工作
+这将能够很好的运行,但是我们今后也希望 `Home` 能够像 `About` 和 `Repos` 组件一样。这里有一些理由:
 
+1. 这个组件可能会带一些抽象数据,这些数据是和路由相匹配的。
 
+2. 可能需要 `onEnter` 的钩子。
+
+3. 可能需要代码分割。
+
+所以,把 `Home` 组件从 `App` 组件中解耦出来,然后由路由配置来确定,子组件要渲染什么。记得,我们想要构建的是层层嵌套的应用,而不是一个巨大的组件!
+
+让我们在 `index.js` 中添加一个路由。
+
+```js
+// index.js
+// 需要增加引入:
+// 添加 `IndexRoute` 到 'react-router' 的引入中
+import { Router, Route, hashHistory, IndexRoute } from 'react-router'
+// 添加 Home 组件
+import Home from './modules/Home'
+
+// ...
+
+render((
+  <Router history={hashHistory}>
+    <Route path="/" component={App}>
+
+      {/* add it here, as a child of `/` */}
+      <IndexRoute component={Home}/>
+
+      <Route path="/repos" component={Repos}>
+        <Route path="/repos/:userName/:repoName" component={Repo}/>
+      </Route>
+      <Route path="/about" component={About}/>
+    </Route>
+  </Router>
+), document.getElementById('app'))
+```
+
+现在打开浏览器 [http://localhost:8080](http://localhost:8080),你将会看到新的组件已经被渲染了。
+
+注意到了吗? `IndexRoute` 并没有配置路径path。当没有子组件能匹配的时候,或者是父组件的路由没有找到指定的匹配的时候,它就能直接变成 `this.props.children` 渲染的部分渲染出来。
+
+默认路由有时候就是让人意想不到。你可以想象一下,当你的web服务的url是`/`的时候,你的页面中也有一个`index.html` 作为首页显示。同理,React Router 也是需要一个默认路由来展示。
+
+### [下一课: 默认链接](../09-index-links/)
