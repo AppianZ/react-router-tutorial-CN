@@ -96,6 +96,8 @@ This way you'll be sure to be pushing to whatever history gets passed to
 `Router`. It also makes testing a bit easier since you can more easily
 stub context than singletons.
 
+### [Next: Server Rendering](../13-server-rendering/)
+
 ---
 
-[Next: Server Rendering](../13-server-rendering/)
+# 导航的编程化
