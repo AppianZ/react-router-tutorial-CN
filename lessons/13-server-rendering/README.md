@@ -358,15 +358,13 @@ import routes from './modules/routes'
 app.get('*', (req, res) => {
   // 匹配url对应的路由
   match({ routes: routes, location: req.url }, (err, redirect, props) => {
-    // `RouterContext` is what the `Router` renders. `Router` keeps these
-    // `props` in its state as it listens to `browserHistory`. But on the
-    // server our app is stateless, so we need to use `match` to
-    // get these props before rendering.
+    // `RouterContext` 代表着要被渲染的 `Router` . `Router` 把
+    // `props` 作为 `browserHistory` 的状态传递下去。但是这个应用的服务端
+    // 是不知道状态是如何的, 所以我们需要在渲染前就使用 `match` 获得props
     const appHtml = renderToString(<RouterContext {...props}/>)
 
-    // dump the HTML into a template, lots of ways to do this, but none are
-    // really influenced by React Router, so we're just using a little
-    // function, `renderPage`
+    // 有很多种方式可以把html放在一个模板里, 但是React Router
+    // 只需要用一个很简单的函数 `renderPage` 就可以了
     res.send(renderPage(appHtml))
   })
 })
@@ -388,3 +386,34 @@ app.listen(PORT, function() {
   console.log('Production Express server running at localhost:' + PORT)
 })
 ```
+
+现在,如果你运行 `NODE_ENV=production npm start` ,然后打开应用,你会看到源文件,看到服务端已经把我们的应用发送到浏览器上了。我们点击一下页面,你会发现客户端的页面已经被渲染过了,所以不需要再向服务端请求页面了。是不是很棒?
+
+我们的回调现在还比较简陋,这里有一个成品版本,如下:
+
+```js
+app.get('*', (req, res) => {
+  match({ routes: routes, location: req.url }, (err, redirect, props) => {
+    // 在这里我们可以先做一个判断
+    if (err) {
+      // 路由匹配过程中报错处理
+      res.status(500).send(err.message)
+    } else if (redirect) {
+      // 我们还没有讨论过路由的 `onEnter` , 但是当一个路由entered的时候,
+      // 这个路由可以被重定向。在这里我们可以限制服务。
+      res.redirect(redirect.pathname + redirect.search)
+    } else if (props) {
+      // 我们获得了props,然后我们就可以匹配路由,然后渲染。
+      const appHtml = renderToString(<RouterContext {...props}/>)
+      res.send(renderPage(appHtml))
+    } else {
+      // 没有错误,也没有重定向,也没有匹配到任何东西的时候404
+      res.status(404).send('Not Found')
+    }
+  })
+})
+```
+
+服务端渲染还是很新的。这还不是"最佳实践",特别是它的数据加载部分并不是特别完善,所以这个教程只不过是你以后实践的垫脚石。
+
+### [下一课: 接下来搞点啥?](../14-whats-next/)
