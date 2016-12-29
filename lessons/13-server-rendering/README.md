@@ -220,6 +220,171 @@ Server rendering is really new. There aren't really "best practices"
 yet, especially when it comes to data loading, so this tutorial is done,
 dropping you off at the bleeding edge.
 
+### [Next: What's Next?](../14-whats-next/)
+
 ---
 
-[Next: What's Next?](../14-whats-next/)
+
+# 服务端渲染
+
+好吧,万事之首,服务端渲染,这也是React一个简单的核心的概念。
+
+```js
+render(<App/>, domNode)
+// 可以在服务端中被渲染成
+const markup = renderToString(<App/>)
+```
+
+虽然它不是火箭科学家,但是它也很重要。首先,我将不会做任何解释的对你抛出一大段webpack的配置。然后再讨论Router。
+
+因为node不能(并且不需要去)理解JSX,所以我们需要编译这些代码,使用一些工具,比如 `babel/register` ,但是这并不适合生产环境使用,所以我们使用webpack来构建一个服务包,就像我们使用它来给客户端构建一个包一样。
+
+现在创建一个新的文件,叫 `webpack.server.config.js`, 内容如下:
+
+
+```js
+var fs = require('fs')
+var path = require('path')
+
+module.exports = {
+
+  entry: path.resolve(__dirname, 'server.js'),
+
+  output: {
+    filename: 'server.bundle.js'
+  },
+
+  target: 'node',
+
+  // keep node_module paths out of the bundle
+  externals: fs.readdirSync(path.resolve(__dirname, 'node_modules')).concat([
+    'react-dom/server', 'react/addons',
+  ]).reduce(function (ext, mod) {
+    ext[mod] = 'commonjs ' + mod
+    return ext
+  }, {}),
+
+  node: {
+    __filename: true,
+    __dirname: true
+  },
+
+  module: {
+    loaders: [
+      { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader?presets[]=es2015&presets[]=react' }
+    ]
+  }
+
+}
+```
+
+这样有些场景就说得通了,我们不需要去覆盖这些包裹的结果,这些配置已经足够了,所以我们已经可以配合webpack运行我们的 `server.js` 了。
+
+现在,在我们运行我们的应用之前,我们需要一些脚本去构建我们的服务。更新 `package.json` 中的脚本,如下:
+
+```
+"scripts": {
+  "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
+  "start:dev": "webpack-dev-server --inline --content-base public/ --history-api-fallback",
+  "start:prod": "npm run build && node server.bundle.js",
+  "build:client": "webpack",
+  "build:server": "webpack --config webpack.server.config.js",
+  "build": "npm run build:client && npm run build:server"
+},
+```
+
+现在,我们可以运行 `NODE_ENV=production npm start`, Webpack会帮我们打包好服务端和客户端的包。
+
+ok,现在我们来讨论Router。我们需要把我们的路由打包到一个模块中去,为了能够让客户端和服务端都能引入它。在 `modules/routes` 下创建一个文件,然后把你的路由和组件移植过去。
+
+```js
+// modules/routes.js
+import React from 'react'
+import { Route, IndexRoute } from 'react-router'
+import App from './App'
+import About from './About'
+import Repos from './Repos'
+import Repo from './Repo'
+import Home from './Home'
+
+module.exports = (
+  <Route path="/" component={App}>
+    <IndexRoute component={Home}/>
+    <Route path="/repos" component={Repos}>
+      <Route path="/repos/:userName/:repoName" component={Repo}/>
+    </Route>
+    <Route path="/about" component={About}/>
+  </Route>
+)
+```
+
+```js
+// index.js
+import React from 'react'
+import { render } from 'react-dom'
+import { Router, browserHistory } from 'react-router'
+// import routes and pass them into <Router/>
+import routes from './modules/routes'
+
+render(
+  <Router routes={routes} history={browserHistory}/>,
+  document.getElementById('app')
+)
+```
+
+现在打开 `server.js`,我们将会从React Router中引入两个包来帮助我们的服务端渲染。
+
+如果我们尝试像用户端渲染一个 `<Router/>` 在服务端,我们将会得到一个空白的网页,因为服务端渲染是同步的,而路由匹配是异步的。
+
+因此,大多数应用都会想要利用路由去加载数据。所以无论路由是异步的或者其他什么,你都应该在渲染之前就知道哪一屏将会被渲染出来,这样你就可以在渲染之前利用这些信息去异步加载数据。我们现在的这个应用中暂时不需要任何的数据记载,但是我们可以看看它会在哪里发生。
+
+首先,我们从react router中引入 `match` 和 `RouterContext`, 然后我们将会根据路由匹配到请求的url,然后最后渲染页面。
+
+
+```js
+// ...
+// import 一些新的包
+import React from 'react'
+// 我们可以利用 renderToString 把我们的页面渲染成html字符串
+import { renderToString } from 'react-dom/server'
+// match 和 RouterContext 能够根据url匹配到路由,然后渲染
+import { match, RouterContext } from 'react-router'
+import routes from './modules/routes'
+
+// ...
+
+// 把所有请求都发送到 index.html 为了 browserHistory 能够生效
+
+app.get('*', (req, res) => {
+  // 匹配url对应的路由
+  match({ routes: routes, location: req.url }, (err, redirect, props) => {
+    // `RouterContext` is what the `Router` renders. `Router` keeps these
+    // `props` in its state as it listens to `browserHistory`. But on the
+    // server our app is stateless, so we need to use `match` to
+    // get these props before rendering.
+    const appHtml = renderToString(<RouterContext {...props}/>)
+
+    // dump the HTML into a template, lots of ways to do this, but none are
+    // really influenced by React Router, so we're just using a little
+    // function, `renderPage`
+    res.send(renderPage(appHtml))
+  })
+})
+
+function renderPage(appHtml) {
+  return `
+    <!doctype html public="storage">
+    <html>
+    <meta charset=utf-8/>
+    <title>My First React Router App</title>
+    <link rel=stylesheet href=/index.css>
+    <div id=app>${appHtml}</div>
+    <script src="/bundle.js"></script>
+   `
+}
+
+var PORT = process.env.PORT || 8080
+app.listen(PORT, function() {
+  console.log('Production Express server running at localhost:' + PORT)
+})
+```
