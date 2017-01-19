@@ -28,6 +28,150 @@ Missing stuff that will come eventually, hopefully ... maybe.
 
 
 ---
+> 接下来讲讲自己开发小demo的感觉
+
+# 路由匹配的原则
+## 路径语法
+* :paramName – 匹配一段位于 /、? 或 # 之后的 URL。 命中的部分将被作为一个参数
+* () – 在它内部的内容被认为是可选的
+* \* – 匹配任意字符（非贪婪的）直到命中下一个字符或者整个 URL 的末尾，并创建一个 splat 参数
+
+```js
+<Route path="/hello/:name">         // 匹配 /hello/michael 和 /hello/ryan
+<Route path="/hello(/:name)">       // 匹配 /hello, /hello/michael 和 /hello/ryan
+·<Route path="/files/*.*">           // 匹配 /files/hello.jpg 和 /files/path/to/hello.jpg
+```
+
+如果一个路由使用了`相对路径`，那么完整的路径将由它的`所有祖先节点的路径`和`自身指定的相对路径`拼接而成。使用`绝对路径`可以使路由匹配行为忽略嵌套关系。
+
+## Histories
+>   `browserHistory` \ `hashHistory` \  `createMemoryHistory`
+
+|类型名称|解释|
+|:---:|---|
+|browserHistory|Browser history 是使用 React Router 的应用推荐的 history。它使用浏览器中的 History API 用于处理 URL，创建一个像example.com/some/path这样真实的 URL 。|
+|hashHistory|Hash history 使用 URL 中的 hash（#）部分去创建形如 example.com/#/some/path 的路由。|
+|createMemoryHistory|Memory history 不会在地址栏被操作或读取。这就解释了我们是如何实现服务器渲染的，而且测试方便。const history = createMemoryHistory(location) |
+
+## IndexRoute 
+* 进入页面时默认的路由的设置IndexRoute
+```js
+<Router history={browserHistory}>
+		<Route path="/" component={Tab}>
+			<IndexRoute component={pageA}/>
+			<Route path="/pageb" component={pageB}/>
+			<Route path="/pagec" component={pageC}>
+				<Route path="/pagec/:username/:nickname" component={pageD}/>
+			</Route>
+		</Route>
+	</Router>
+```
+
+## IndexLink
+* / 的链接对应的默认链接IndexLink
+默认链接如果你在这个 app 中使用 `<Link to="/">Home</Link> ` , 它会一直处于激活状态，因为所有的 URL 的开头都是 / 。 
+
+如果指向 / 的链接只激活home，请使用 `<IndexLink to="/">Home</IndexLink>`，也可以像底下这样写。
+
+```js
+<Link key={`tab-${idx}`} to={`${obj.path}`}
+				  activeClassName="on"
+				  onlyActiveOnIndex={true} // points
+				  className="tab">{obj.name}</Link>
+```
+
+## 用对象的方式替换配置
+```js
+const routeConfig = [
+  { path: '/',
+    component: App,
+    indexRoute: { component: Dashboard },
+    childRoutes: [
+      { path: 'about', component: About },
+      { path: 'inbox',
+        component: Inbox,
+        childRoutes: [
+          { path: '/messages/:id', component: Message },
+          { path: 'messages/:id',
+            onEnter: function (nextState, replaceState) {
+              replaceState(null, '/messages/' + nextState.params.id)
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+
+React.render(<Router routes={routeConfig} />, document.body)
+```
+
+## 动态路由
+* 我们所希望的一定是“代码分拆” ，按需加载。路由配置好每个 view，就是一种代码分拆。
+* React Router的路由配置都是异步完成，不仅允许延迟加载组件，并且延迟加载配置。
+* 路由配置是一种“逐渐匹配”的过程，根据URL一级级向下匹配对应的组件和配置。
+* Route 可以定义 `getChildRoutes`，`getIndexRoute` 和 `getComponents`  这几个函数.
+
+## 跳转前确认
+* `routerWillLeave 生命周期钩子`，这使得 React 组件可以拦截正在发生的跳转，或在离开 route 前提示用户。
+> routerWillLeave 返回值有以下两种：
+> 1 return false 取消此次跳转
+> 2 return 返回提示信息，在离开 route 前提示用户进行确认。
+
+```js
+import { Lifecycle } from 'react-router';
+const Home = React.createClass({
+ //在路由中需要利用mixins Lifecycle来获取routerWillLeave
+  mixins: [ Lifecycle ],
+  routerWillLeave(nextLocation) {},
+})
+```
+
+
+## 服务端渲染
+```js
+import { renderToString } from 'react-dom/server'
+import { match, RoutingContext } from 'react-router'
+import routes from './routes'
+
+serve((req, res) => {
+  //  使用 match 在渲染之前根据 location 匹配 route
+  match({ routes, location: req.url }, (error, redirectLocation, renderProps) => {
+    if (error) {
+      res.send(500, error.message)
+    } else if (redirectLocation) {
+      res.redirect(302, redirectLocation.pathname + redirectLocation.search)
+    } else if (renderProps) {
+    // 使用 RoutingContext 同步渲染 route 组件 , 或另外去请求数据
+      res.send(200, renderToString(<RoutingContext {...renderProps} />))
+    } else {
+      res.send(404, 'Not found')
+    }
+  })
+})
+```
+
+## 组件生命周期
+|hookname|function|
+|:---:|---|
+|componentDidMount|根据路由，组件挂载完成|
+|componentWillUnmount|路由切换，原组件即将卸载|
+|componentWillReceiveProps|路由参数变动，组件有更新，会接收到新的props|
+|componentDidUpdate|接收到新的props，会触发组件更新|
+
+```js
+// 特别注意componentDidUpdate这个钩子，有一个默认参数，就是prevProps
+componentDidUpdate (prevProps) {
+    let oldId = prevProps.params.invoiceId // 通过参数更新数据
+    let newId = this.props.params.invoiceId
+    if (newId !== oldId){ ....一些操作 }
+  },
+// 特别注意componentWillReceiveProps这个钩子，有一个默认参数，就是nextProps
+componentWillReceiveProps(nextProps) {
+    const routeChanged = nextProps.location !== this.props.location
+    console.log(routeChanged);
+  }
+```
 
 ## src下的小Demo
 ### 页面演示
