@@ -37,8 +37,8 @@ Missing stuff that will come eventually, hopefully ... maybe.
 * \* – 匹配任意字符（非贪婪的）直到命中下一个字符或者整个 URL 的末尾，并创建一个 splat 参数
 
 ```js
-<Route path="/hello/:name">         // 匹配 /hello/michael 和 /hello/ryan
-<Route path="/hello(/:name)">       // 匹配 /hello, /hello/michael 和 /hello/ryan
+<Route path="/hello/:name">         // 匹配 /hello/zhang 和 /hello/huang
+<Route path="/hello(/:name)">       // 匹配 /hello, /hello/zhang 和 /hello/huang
 <Route path="/files/*.*">           // 匹配 /files/hello.jpg 和 /files/path/to/hello.jpg
 ```
 
@@ -114,9 +114,12 @@ React.render(<Router routes={routeConfig} />, document.body)
 
 ## 跳转前确认
 * `routerWillLeave 生命周期钩子`，这使得 React 组件可以拦截正在发生的跳转，或在离开 route 前提示用户。
+
 > routerWillLeave 返回值有以下两种：
-> 1 return false 取消此次跳转
-> 2 return 返回提示信息，在离开 route 前提示用户进行确认。
+
+> 1. return false 取消此次跳转
+
+> 2. return 返回提示信息，在离开 route 前提示用户进行确认。
 
 ```js
 import { Lifecycle } from 'react-router';
