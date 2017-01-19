@@ -39,13 +39,13 @@ Missing stuff that will come eventually, hopefully ... maybe.
 ```js
 <Route path="/hello/:name">         // 匹配 /hello/michael 和 /hello/ryan
 <Route path="/hello(/:name)">       // 匹配 /hello, /hello/michael 和 /hello/ryan
-·<Route path="/files/*.*">           // 匹配 /files/hello.jpg 和 /files/path/to/hello.jpg
+<Route path="/files/*.*">           // 匹配 /files/hello.jpg 和 /files/path/to/hello.jpg
 ```
 
 如果一个路由使用了`相对路径`，那么完整的路径将由它的`所有祖先节点的路径`和`自身指定的相对路径`拼接而成。使用`绝对路径`可以使路由匹配行为忽略嵌套关系。
 
 ## Histories
->   `browserHistory` \ `hashHistory` \  `createMemoryHistory`
+>  主要类型有: `browserHistory` \ `hashHistory` \  `createMemoryHistory`
 
 |类型名称|解释|
 |:---:|---|
